@@ -98,6 +98,26 @@ describe("Subman", function () {
 
 		});
 
+		// TODO: ensure that withdrawing money before the time is up fails
+		it("Withdrawing early should fail if it's done too early", async function() {
+			const subman = await loadFixture(deploySubman);
+			// generate random payer address,
+			// random payee address,
+			// add payee as a payee from the payer, should get correct result.
+			const signers = await ethers.getSigners();
+			const payer = signers[0].address;
+			const payee =  signers[1].address;
+
+			// I'm using the payee address in place of the token because it fits for now and doesn't matter
+			await subman.addPayee(payee, 100, 10, payee);
+
+			//const withdrawUnsigned = await subman.populateTransaction.withdraw(payer);
+			//const withdrawSigned = signers[1].signTransaction(withdrawUnsigned);
+			//await expect().to.be.revertedWith("Withdrawing too frequently")
+			await expect(subman.withdraw(payer, overrides.from=payee)).to.be.revertedWith("Withdrawing too frequently")
+        );
+		});
+
 	});
 
 });

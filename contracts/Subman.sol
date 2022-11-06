@@ -133,7 +133,7 @@ contract Subman {
 	// FIXME: replace 0
 
 	Subscription memory sub = _payerPayee[_payer][msg.sender];
-	require(sub.numWithdrawals / (block.timestamp - sub.startTime) < sub.paymentFreq, "Withdrawing too frequently");
+	require(sub.numWithdrawals * sub.paymentFreq > (block.timestamp - sub.startTime), "Withdrawing too frequently");
 
 	IERC20 token = IERC20(sub.tokenAddr);
 
@@ -162,4 +162,5 @@ contract Subman {
 									 sub.nextPayee);
 
    }
+
 }
