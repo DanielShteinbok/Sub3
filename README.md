@@ -1,13 +1,8 @@
-# Sample Hardhat Project
+# Sub3 Smart Contracts
+These are the smart contracts for the Sub3 project, written for EthSF 2022.
+The objective of this project is to create a platform for risk-free management of recurring payments for subscription services.
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, and a script that deploys that contract.
+This simple smart contract allows for users to add payees, specifying how much they can withdraw and how often.
+This should not allow service providers, or payees to take payment more frequently than agreed upon.
 
-Try running some of the following tasks:
-
-```shell
-npx hardhat help
-npx hardhat test
-REPORT_GAS=true npx hardhat test
-npx hardhat node
-npx hardhat run scripts/deploy.js
-```
+Users can cancel the recurring payments any time.
