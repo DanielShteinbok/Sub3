@@ -18,15 +18,15 @@ module.exports = {
   networks: {
       hardhat: {
 		  },
-      matic: {
-		    url: "https://rpc-mumbai.maticvigil.com",
-		    accounts: [process.env.PRIVATE_KEY]
-		  },
-	skale: {
-	     url: skale,
-	     accounts: [process.env.PRIVATE_KEY],
-	     gasPrice: 0
-	 },
+      //matic: {
+//		    url: "https://rpc-mumbai.maticvigil.com",
+		    //accounts: process.env.PRIVATE_KEY
+		  //},
+	//skale: {
+	     //url: skale,
+	     //accounts: process.env.PRIVATE_KEY,
+	     //gasPrice: 0
+	 //},
 	},
   etherscan: {
 	      apiKey: process.env.POLYGONSCAN_API_KEY

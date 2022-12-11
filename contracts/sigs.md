@@ -21,6 +21,20 @@ function stopPayment(address _payee) public returns (bool)
 Removes the payee.
 
 ```
+function getPayeesForPayer(address _payer) public view returns (address[] memory)
+```
+Returns the array of payees, to which the payer is paying
+
+```
+function getPayersForPayee(address _payee) public view returns (address[] memory)
+```
+Returns the array of payers that are paying the payee
+
+
+### DEPRECATED
+You shouldn't need to use anything below
+
+```
 function endSubPayer(address _payer) public view returns (address payee)
 ```
 
