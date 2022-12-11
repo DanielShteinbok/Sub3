@@ -30,110 +30,31 @@ describe("Subman", function () {
 	const subman = await Subman.deploy();
 	  return subman;
   }
-
+async function deploySubmanAndToken() {
+	const Subman = await ethers.getContractFactory("Subman");
+	const subman = await Subman.deploy();
+	const Token = await ethers.getContractFactory("TestToken");
+	const token = await Token.deploy();
+	await token.transfer((await ethers.getSigners())[1].address, ethers.BigNumber.from("20000").mul(ethers.BigNumber.from("10").pow(await token.decimals())));
+	await token.approve(subman.address, 10000000000);
+	return [subman, token];
+  }
 	describe("Payee Addition", function() {
-		it("Before any addition, should get 0x0 endSubPayee", async function() {
+		it("Before any addition, should get empty array of payees", async function() {
 			const subman = await loadFixture(deploySubman);
 			const signers = await ethers.getSigners();
-			expect(await subman.endSubPayee(signers[0].address))
-				.to.equal(ethers.constants.AddressZero);
+
+			expect(await subman.getPayeesForPayer(signers[0].address)).to.deep.equal([]);
 		});
-		it("Before any addition, should get 0x0 endSubPayee for other signers", async function() {
-			// since this works, seems we can get at least three addresses this way
+		it("Before any addition, should get empty array of payers", async function() {
 			const subman = await loadFixture(deploySubman);
 			const signers = await ethers.getSigners();
-			const payer = signers[1].address;
-			const payee =  signers[2].address;
-			expect(await subman.endSubPayer(payer))
-				.to.equal(ethers.constants.AddressZero);
+
+			expect(await subman.getPayersForPayee(signers[0].address)).to.deep.equal([]);
 		});
-		// TODO: repeat test above with a random addresses
-		it("After adding a payee, should get that payee from endSubPayer", async function() {
-			const subman = await loadFixture(deploySubman);
-			// generate random payer address,
-			// random payee address,
-			// add payee as a payee from the payer, should get correct result.
-			const signers = await ethers.getSigners();
-			const payer = signers[0].address;
-			const payee =  signers[1].address;
-
-			success = await subman.addPayee(payee, 100, 10, payee);
-			expect(await subman.endSubPayer(payer))
-				.to.equal(payee);
-
-		});
-		it("After adding a payee, should get that payee from endSubPayee", async function() {
-			const subman = await loadFixture(deploySubman);
-			// generate random payer address,
-			// random payee address,
-			// add payee as a payee from the payer, should get correct result.
-			const signers = await ethers.getSigners();
-			const payer = signers[0].address;
-			const payee =  signers[1].address;
-
-			// I'm using the payee address in place of the token because it fits for now and doesn't matter
-			success = await subman.addPayee(payee, 100, 10, payee);
-			expect(await subman.endSubPayee(payee))
-				.to.equal(payer);
-
-		});
-		it("After adding two payees, I should be able to get the second by iterating through", async function() {
-			const subman = await loadFixture(deploySubman);
-			// generate random payer address,
-			// random payee address,
-			// add payee as a payee from the payer, should get correct result.
-			const signers = await ethers.getSigners();
-			const payer = signers[0].address;
-			const payee =  signers[1].address;
-			const payee2 = signers[2].address;
-
-			// I'm using the payee address in place of the token because it fits for now and doesn't matter
-			success = await subman.addPayee(payee, 100, 10, payee);
-			success2 = await subman.addPayee(payee2, 100, 10, payee);
-
-			expect(await subman.endSubPayer(payer))
-				.to.equal(payee2);
-
-			const {firstBlock, numWithdrawals, amount, tokenAddr, payee_out, payer_out, nextPayer, nextPayee}= await subman.getSub(payer, payee2);
-			expect(nextPayee).to.equal(payee);
-
-		});
-
+				
 		// TODO: ensure that withdrawing money before the time is up fails
-		it("Withdrawing early should fail if it's done too early", async function() {
-			const subman = await loadFixture(deploySubman);
-			// generate random payer address,
-			// random payee address,
-			// add payee as a payee from the payer, should get correct result.
-			const signers = await ethers.getSigners();
-			const payer = signers[0];
-			const payee =  signers[1];
-
-			// I'm using the payee address in place of the token because it fits for now and doesn't matter
-			await subman.addPayee(payee.address, 100, 10, payee.address);
-
-			//const withdrawUnsigned = await subman.populateTransaction.withdraw(payer);
-			//const withdrawSigned = signers[1].signTransaction(withdrawUnsigned);
-			//await expect().to.be.revertedWith("Withdrawing too frequently")
-			await expect(subman.connect(payee).withdraw(payer.address)).to.be.revertedWith("Withdrawing too frequently")
-		});
-		// _numPayees is no longer accessible, because I made it private
-		//it("_numPayees should increase when we add a payee", async function() {
-			//const subman = await loadFixture(deploySubman);
-			// generate random payer address,
-			// random payee address,
-			// add payee as a payee from the payer, should get correct result.
-			//const signers = await ethers.getSigners();
-			//const payer = signers[0].address;
-			//const payee =  signers[1].address;
-			//const payee2 = signers[2].address;
-
-
-			// I'm using the payee address in place of the token because it fits for now and doesn't matter
-			//success = await subman.addPayee(payee, 100, 10, payee);
-			//success2 = await subman.addPayee(payee2, 100, 10, payee);
-			//expect(await subman._numPayees(payer)).to.equal(2);
-		//});
+		
 		it("getPayeesForPayer should return a list of the two payees that we add", async function() {
 			const subman = await loadFixture(deploySubman);
 			// generate random payer address,
@@ -203,6 +124,136 @@ describe("Subman", function () {
 			expect(await subman.getPayeesForPayer(payer)).to.deep.equal([payee]);
 
 		});
+		it("Should successfully remove the middle payee of three", async function() {
+		const subman = await loadFixture(deploySubman);
+			const signers = await ethers.getSigners();
+			const payer = signers[0].address;
+			const payee =  signers[1].address;
+			const payee2 = signers[2].address;
+			const payee3 = signers[3].address;
+
+			// I'm using the payee address in place of the token because it fits for now and doesn't matter
+			success = await subman.addPayee(payee, 100, 10, payee);
+			success2 = await subman.addPayee(payee2, 100, 10, payee);
+			success3 = await subman.addPayee(payee3, 100, 10, payee);
+			
+			await subman.stopPayment(payee2);
+
+			expect(await subman.getPayeesForPayer(payer)).to.deep.equal([payee3, payee]);
+		});
+
+		it("Should successfully remove the first payer", async function() {
+		const subman = await loadFixture(deploySubman);
+			// generate random payer address,
+			// random payee address,
+			// add payee as a payee from the payer, should get correct result.
+			const signers = await ethers.getSigners();
+			const payer1 = signers[0];
+			const payer2 =  signers[1];
+			const payee = signers[2].address;
+
+			// I'm using the payee address in place of the token because it fits for now and doesn't matter
+			success = await subman.addPayee(payee, 100, 10, payee);
+			success2 = await subman.connect(payer2).addPayee(payee, 100, 10, payee);
+			
+			await subman.stopPayment(payee);
+			expect(await subman.getPayersForPayee(payee)).to.deep.equal([payer2.address]);
+
+		});
+		it("Should successfully remove the second payer", async function() {
+		const subman = await loadFixture(deploySubman);
+			const signers = await ethers.getSigners();
+			const payer1 = signers[0];
+			const payer2 =  signers[1];
+			const payee = signers[2].address;
+
+			// I'm using the payee address in place of the token because it fits for now and doesn't matter
+			success = await subman.addPayee(payee, 100, 10, payee);
+			success2 = await subman.connect(payer2).addPayee(payee, 100, 10, payee);
+			
+			await subman.connect(payer2).stopPayment(payee);
+			expect(await subman.getPayersForPayee(payee)).to.deep.equal([payer1.address]);
+		});
+		it("Should successfully remove the middle payer of three", async function() {
+		const subman = await loadFixture(deploySubman);
+			const signers = await ethers.getSigners();
+			const payer = signers[0].address;
+			const payee =  signers[1].address;
+			const payer2 = signers[2];
+			const payer3 = signers[3];
+
+			// I'm using the payee address in place of the token because it fits for now and doesn't matter
+			success = await subman.addPayee(payee, 100, 10, payee);
+			success2 = await subman.connect(payer2).addPayee(payee, 100, 10, payee);
+			success3 = await subman.connect(payer3).addPayee(payee, 100, 10, payee);
+			
+			await subman.connect(payer2).stopPayment(payee);
+
+			expect(await subman.getPayersForPayee(payee)).to.deep.equal([payer3.address, payer]);
+		});
+
 	});
+	describe("Token interoperability", function() {
+		it("Should create the token and send the first transaction", async function() {
+			const [subman, token] = await loadFixture(deploySubmanAndToken);
+			const signers = await ethers.getSigners();
+			expect(await token.balanceOf(signers[0].address)).to.equal(ethers.BigNumber.from("80000").mul(ethers.BigNumber.from("10").pow(await token.decimals())));
+		});
+	});
+
+	describe("Token interoperability", function() {
+		it("Should create the token and send the first transaction", async function() {
+			const [subman, token] = await loadFixture(deploySubmanAndToken);
+			const signers = await ethers.getSigners();
+			expect(await token.balanceOf(signers[1].address)).to.equal(ethers.BigNumber.from("20000").mul(ethers.BigNumber.from("10").pow(await token.decimals())));
+		});
+		it("Withdrawing early should fail if it's done too early", async function() {
+			const [subman, token] = await loadFixture(deploySubmanAndToken);
+			// generate random payer address,
+			// random payee address,
+			// add payee as a payee from the payer, should get correct result.
+			const signers = await ethers.getSigners();
+			const payer = signers[0];
+			const payee =  signers[1];
+
+			// I'm using the payee address in place of the token because it fits for now and doesn't matter
+			await subman.addPayee(payee.address, 100, 10, token.address);
+			
+			await subman.connect(payee).withdraw(payer.address);
+
+			//const withdrawUnsigned = await subman.populateTransaction.withdraw(payer);
+			//const withdrawSigned = signers[1].signTransaction(withdrawUnsigned);
+			//await expect().to.be.revertedWith("Withdrawing too frequently")
+			await expect(subman.connect(payee).withdraw(payer.address)).to.be.revertedWith("Withdrawing too frequently")
+		});
+		it("Withdrawing should work if it's done after a reasonable time", async function() {
+			const [subman, token] = await loadFixture(deploySubmanAndToken);
+			// generate random payer address,
+			// random payee address,
+			// add payee as a payee from the payer, should get correct result.
+			const signers = await ethers.getSigners();
+			const payer = signers[0];
+			const payee =  signers[1];
+
+			// I'm using the payee address in place of the token because it fits for now and doesn't matter
+			await subman.addPayee(payee.address, 100, 10, token.address);
+			
+			
+			await subman.connect(payee).withdraw(payer.address);
+
+			await time.increase(11);
+			//await time.increaseTo(time.);
+
+			//const withdrawUnsigned = await subman.populateTransaction.withdraw(payer);
+			//const withdrawSigned = signers[1].signTransaction(withdrawUnsigned);
+			//await expect().to.be.revertedWith("Withdrawing too frequently")
+			//await expect(subman.connect(payee).withdraw(payer.address)).to.be.revertedWith("Withdrawing too frequently")
+			await subman.connect(payee).withdraw(payer.address);
+			expect(await token.balanceOf(signers[1].address)).to.equal(ethers.BigNumber.from("20000").mul(
+				ethers.BigNumber.from("10").pow(await token.decimals())).add(ethers.BigNumber.from("200")));
+
+		});
+	});
+	
 
 });

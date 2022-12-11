@@ -6,8 +6,8 @@ pragma solidity ^0.8.9;
 // using an OpenZeppelin EnumerableMap for keeping track of connections
 // between payer and payee
 //import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
-//import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "./IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+//import "./IERC20.sol";
 
 contract Subman {
     //uint public unlockTime;
@@ -91,6 +91,7 @@ contract Subman {
 	    newSub.paymentFreq = _paymentFreq;
 	    newSub.tokenAddr = _token;
 	    newSub.startTime = block.timestamp;
+	    newSub.numWithdrawals = 0;
 
 	    // check whether the payer has a starting point (implying existing subscriptions).
 	    // If so, point the new subscription to the starting point.
@@ -153,15 +154,9 @@ contract Subman {
 	    --_numPayers[_payee];
 	    --_numPayees[msg.sender];
 
+	    return true;
     }
 
-    function endSubPayee(address _payee) public view returns (address) {
-	    return _payerEnd[_payee];
-    }
-
-    function endSubPayer(address _payer) public view returns (address) {
-	    return _payeeEnd[_payer];
-    }
 
     function getPayeesForPayer(address _payer) public view returns (address[] memory) {
 	    // count the number of payees of the payer, since we don't store this
@@ -174,7 +169,11 @@ contract Subman {
 	    //address[] memory toReturn = new address[](1);
 
 	    // the first element of the toReturn array is the end-payee associated with this payer
-	    toReturn[0] = endSubPayer(_payer);
+	    //toReturn[0] = endSubPayer(_payer);
+	    if (_numPayees[_payer] == 0) {
+		    return toReturn;
+	    }
+	    toReturn[0] = _payeeEnd[_payer];
 	    for (uint i=1; i < _numPayees[_payer]; i++) {
 		    // each subsequent element of the toReturn array should be the nextPayee of the last
 		    toReturn[i] = _payerPayee[_payer][toReturn[i-1]].nextPayee;
@@ -193,7 +192,11 @@ contract Subman {
 	    //address[] memory toReturn = new address[](1);
 
 	    // the first element of the toReturn array is the end-payee associated with this payer
-	    toReturn[0] = endSubPayee(_payee);
+	    //toReturn[0] = endSubPayee(_payee);
+	    if (_numPayers[_payee] == 0) {
+		    return toReturn;
+	    }
+	    toReturn[0] = _payerEnd[_payee];
 	    for (uint i=1; i < _numPayers[_payee]; i++) {
 		    // each subsequent element of the toReturn array should be the nextPayee of the last
 		    toReturn[i] = _payerPayee[toReturn[i-1]][_payee].nextPayer;
@@ -224,8 +227,9 @@ contract Subman {
 
 	// FIXME: replace 0
 
-	Subscription memory sub = _payerPayee[_payer][msg.sender];
-	require(sub.numWithdrawals * sub.paymentFreq > (block.timestamp - sub.startTime), "Withdrawing too frequently");
+	Subscription storage sub = _payerPayee[_payer][msg.sender];
+	require(sub.numWithdrawals * sub.paymentFreq < (block.timestamp - sub.startTime), "Withdrawing too frequently");
+	++sub.numWithdrawals;
 
 	IERC20 token = IERC20(sub.tokenAddr);
 

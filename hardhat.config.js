@@ -18,10 +18,11 @@ module.exports = {
   networks: {
       hardhat: {
 		  },
-      //matic: {
-//		    url: "https://rpc-mumbai.maticvigil.com",
+      matic: {
+		    url: "https://rpc-mumbai.maticvigil.com",
+		    accounts: [process.env.PRIVATE_KEY]
 		    //accounts: process.env.PRIVATE_KEY
-		  //},
+		  },
 	//skale: {
 	     //url: skale,
 	     //accounts: process.env.PRIVATE_KEY,
